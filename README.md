@@ -3,6 +3,24 @@
 > 🔴 **作者：袁六伟 · 台州汇芯**｜一人 AI 公司创业者，6000+ 学员，100+ 客户，得到/华为分享老师
 > 📮 更多 AI 视频与自动化实战，关注 **公众号 / 视频号：袁六伟**
 
+## 效果展示
+
+> 样片：医保边界，数据来源：国家医保局 2024 年统计公报，由本 Skill 渲染。
+
+![样片动图：封面 → 次均住院费用滚动到 ¥11707 → 认知反差](assets/showcase/demo.gif)
+
+| | |
+|:---:|:---:|
+| ![封面](assets/showcase/01-cover.jpg) | ![数字滚动](assets/showcase/02-number-roll.jpg) |
+| 横屏首帧，中心即一张 3:4 竖版封面 | 钩子：次均住院费用滚动到 ¥11707 |
+| ![认知反差](assets/showcase/03-contrast.jpg) | ![圆环仪表](assets/showcase/04-gauge.jpg) |
+| 认知反差：「你以为…其实…」 | 圆环仪表：目录内基金支付比例 84.8% |
+| ![柱状图](assets/showcase/05-bar-chart.jpg) | ![圆环动画](assets/showcase/gauge.gif) |
+| 柱状图：医院级别越高，单次住院越贵 | 圆环从 0 滚到 84.8% 的动画 |
+| ![结尾](assets/showcase/06-outro.jpg) | |
+| 结尾：3 条建议 + 一句升华 | |
+
+
 
 用 AI agent 一键产出「深黑背景 + 橙红光晕 + 动态数字/图表」风格的数据可视化科普短视频。自带可直接运行的 Python 渲染引擎，只依赖 ffmpeg + Pillow + numpy，内置跨平台中文字体探测。
 
