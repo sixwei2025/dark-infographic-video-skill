@@ -38,6 +38,7 @@ npx skills add sixwei2025/dark-infographic-video-skill
 
 - Python 3.9+，并安装 `pip install pillow numpy`
 - ffmpeg
+- 中文字体：`engine.py` 会自动探测（macOS PingFang/Hiragino，Linux Noto Sans CJK/思源黑体/文泉驿，Windows 微软雅黑）。Linux 上没有中文字体时先装一个，例如 `sudo apt install fonts-noto-cjk`；也可以用 `export DARK_FONT=/path/to/font.ttc` 直接指定。
 
 ## 快速开始
 

@@ -7,8 +7,8 @@ engine.py —— 暗黑数据可视化短视频 · 通用渲染引擎
 你的选题内容（场景函数、章节数据、具体文案）写在另一个文件里（参照 example_scenes.py），
 在那个文件顶部 `from engine import *` 之后即可使用这里的所有工具函数。
 
-字体路径必须先跑 font_finder.py 探测后手动替换下面的 PF / NUMF 两行，
-否则在没有 PingFang 的 Linux/服务器环境下中文会显示成方块。
+字体会自动探测（DARK_FONT 环境变量 → font_finder.py → 常见路径），
+macOS / Linux / Windows 都不用手动改；找不到时会报错并提示该装什么字体。
 """
 import sys, os, math, subprocess
 import numpy as np
@@ -18,17 +18,138 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 W, H, FPS = 1920, 1080, 30     # 默认横屏 1080P 30fps；竖屏抖音可改成 1080, 1920
 COVER_FRAMES = 3                # 封面占用的帧数，3帧@30fps ≈ 0.1秒，抖音默认取首帧做封面
 
-# ============== 字体（务必先跑 font_finder.py 再替换这里） ==============
-# macOS 默认值，仅供本地调试；部署到 Linux/服务器前必须重新探测替换
-PF = "/System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc"
-AV = "/System/Library/Fonts/Avenir Next.ttc"     # 大号数字用的西文字体，没有就用 PF 代替
-HN = "/System/Library/Fonts/HelveticaNeue.ttc"
-# 字重映射：key -> (字体文件路径, ttc内的index)。Linux 上大多数中文字体文件只有一个字重，
-# 全部写 index=0 即可；只有 macOS PingFang.ttc / Windows 部分字体才需要区分 index。
-FONTS = {
-    'reg': (PF, 3), 'med': (PF, 7), 'semi': (PF, 11), 'light': (PF, 15), 'thin': (PF, 19),
-    'num': (AV, 0), 'numd': (AV, 2), 'numm': (AV, 5), 'numl': (HN, 7), 'numul': (HN, 5),
-}
+# ============== 字体（自动探测，一般不用改） ==============
+# 查找顺序：
+#   1. 环境变量 DARK_FONT（中文字体路径，可写成 "路径" 或 "路径#ttc序号"）；
+#      可选 DARK_NUM_FONT 指定大号数字用的西文字体
+#   2. font_finder.py 的候选表 + fc-list 探测
+#   3. 常见路径：macOS PingFang/Hiragino、Linux Noto Sans CJK/思源/文泉驿、Windows 微软雅黑
+# 都找不到会直接报错，并提示该装什么字体。
+_PINGFANG_IDX = {'reg': 3, 'med': 7, 'semi': 11, 'light': 15, 'thin': 19}
+_ZH_COMMON = [
+    "/System/Library/Fonts/PingFang.ttc",
+    "/System/Library/AssetsV2/com_apple_MobileAsset_Font8/*/AssetData/PingFang.ttc",
+    "/System/Library/Fonts/Hiragino Sans GB.ttc",
+    "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/google-noto-cjk/NotoSansCJKsc-Regular.otf",
+    "/usr/share/fonts/opentype/source-han-sans/SourceHanSansSC-Regular.otf",
+    "/usr/share/fonts/adobe-source-han-sans/SourceHanSansSC-Regular.otf",
+    "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+    "/usr/share/fonts/wqy-microhei/wqy-microhei.ttc",
+    "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+    "C:\\Windows\\Fonts\\msyh.ttc",
+    "C:\\Windows\\Fonts\\msyh.ttf",
+    "C:\\Windows\\Fonts\\simhei.ttf",
+]
+_NUM_COMMON = [
+    "/System/Library/Fonts/Avenir Next.ttc",
+    "/System/Library/Fonts/HelveticaNeue.ttc",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "C:\\Windows\\Fonts\\arialbd.ttf",
+]
+
+
+def _font_ok(path, index=0, text=None):
+    try:
+        f = ImageFont.truetype(path, 40, index=index)
+        if text:  # 确认真能画中文，避免拿到只有西文字形的字体
+            m = f.getmask(text)
+            if m.getbbox() is None:
+                return False
+        return True
+    except Exception:
+        return False
+
+
+def _expand(paths):
+    import glob
+    out = []
+    for p in paths:
+        out += sorted(glob.glob(p)) if '*' in p else ([p] if os.path.exists(p) else [])
+    return out
+
+
+def _split_idx(v):
+    if '#' in v:
+        p, i = v.rsplit('#', 1)
+        if i.isdigit():
+            return p, int(i)
+    return v, 0
+
+
+def _find_fonts():
+    zh = None
+    env = os.environ.get('DARK_FONT', '').strip()
+    if env:
+        p, i = _split_idx(os.path.expanduser(env))
+        if not _font_ok(p, i, '中文'):
+            raise RuntimeError(f'DARK_FONT={env} 打不开或不含中文字形，请检查路径（ttc 可写成 路径#序号）')
+        zh = (p, i)
+    if zh is None:
+        cands = []
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import font_finder as _ff
+            cands += _expand(_ff.CANDIDATES_ZH)
+            for l in _ff.try_fc_list():
+                fp = l.split(':')[0].strip()
+                if fp and os.path.exists(fp):
+                    cands.append(fp)
+        except Exception:
+            pass
+        cands += _expand(_ZH_COMMON)
+        seen = set()
+        for p in cands:
+            if p in seen:
+                continue
+            seen.add(p)
+            if 'Serif' in p or 'Mono' in p:   # 优先无衬线黑体
+                continue
+            if _font_ok(p, 0, '中文'):
+                zh = (p, 0)
+                break
+    if zh is None:
+        raise RuntimeError(
+            '找不到可用的中文字体。请安装任意一种后重试：\n'
+            '  Ubuntu/Debian: sudo apt install fonts-noto-cjk   （或 fonts-wqy-microhei）\n'
+            '  CentOS/Fedora: sudo dnf install google-noto-sans-cjk-fonts\n'
+            '  macOS 自带 PingFang；Windows 自带微软雅黑\n'
+            '或用环境变量指定：export DARK_FONT=/path/to/font.ttc')
+    num = None
+    envn = os.environ.get('DARK_NUM_FONT', '').strip()
+    if envn:
+        p, i = _split_idx(os.path.expanduser(envn))
+        if _font_ok(p, i):
+            num = (p, i)
+    if num is None:
+        for p in _expand(_NUM_COMMON):
+            if _font_ok(p, 0):
+                num = (p, 0)
+                break
+    return zh, num
+
+
+(_ZHP, _ZHI), _NUM = _find_fonts()
+PF = _ZHP
+if 'PingFang' in PF and not os.environ.get('DARK_FONT'):
+    _zh = {k: (PF, v) for k, v in _PINGFANG_IDX.items()}
+else:
+    _zh = {k: (PF, _ZHI) for k in _PINGFANG_IDX}
+if _NUM and 'Avenir Next' in _NUM[0]:
+    _HN = "/System/Library/Fonts/HelveticaNeue.ttc"
+    _hn = os.path.exists(_HN)
+    _num = {'num': (_NUM[0], 0), 'numd': (_NUM[0], 2), 'numm': (_NUM[0], 5),
+            'numl': (_HN, 7) if _hn else (_NUM[0], 0), 'numul': (_HN, 5) if _hn else (_NUM[0], 0)}
+else:
+    _n = _NUM or (PF, _ZHI)
+    _num = {k: _n for k in ('num', 'numd', 'numm', 'numl', 'numul')}
+# 字重映射：key -> (字体文件路径, ttc内的index)
+FONTS = {**_zh, **_num}
 
 # ============== 配色（这是唯一需要改就能换品牌色的地方） ==============
 WHT = (242, 238, 230)   # 主文字白

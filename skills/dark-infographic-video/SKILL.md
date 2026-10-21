@@ -107,7 +107,7 @@ python3 -c "import PIL, numpy" || pip3 install pillow numpy
 python3 scripts/font_finder.py
 ```
 
-`scripts/font_finder.py` 会按 macOS → Linux（Noto Sans CJK / 文泉驿 / 思源黑体）→ Windows（微软雅黑）的顺序探测中文字体，找不到会打印具体的安装命令（例如 Linux 下 `apt-get install -y fonts-noto-cjk` 或 `fc-list` 核对字体名）。**不要跳过这一步直接假设字体路径存在**——这是本 Skill 在跨平台/跨模型场景下最大的失败点。确认脚本输出 `✅ 字体就绪` 后再继续。
+`scripts/font_finder.py` 会按 macOS → Linux（Noto Sans CJK / 文泉驿 / 思源黑体）→ Windows（微软雅黑）的顺序探测中文字体，找不到会打印具体的安装命令（例如 Linux 下 `apt-get install -y fonts-noto-cjk` 或 `fc-list` 核对字体名）。**不要跳过这一步直接假设字体路径存在**——这是本 Skill 在跨平台/跨模型场景下最大的失败点。确认脚本输出 `✅ 字体就绪` 后再继续。`engine.py` 启动时会自动按 `DARK_FONT` 环境变量 → `font_finder.py` 探测 → 常见路径的顺序选字体，不需要手动改代码；想指定字体就 `export DARK_FONT=/path/to/font.ttc`（ttc 可写 `路径#序号`），数字字体可用 `DARK_NUM_FONT`。
 
 ### 第 5 步：实现场景代码
 
@@ -210,7 +210,7 @@ ffmpeg -i 成片.mp4 -af "highpass=f=400,volumedetect" -f null -
 - `references/visual-spec.md` —— 精确的配色色值、字号字重映射表、间距网格、缓动公式、章节进度条规则、封面规格。写代码前先看这个。
 - `references/scene-cookbook.md` —— 10 种可复用部件的代码片段（圆环仪表/点阵脑区/双曲线交叉/柱状图/漂移游走/日历闪烁/网格宫格/标题揭示/章节HUD/结尾卡），每章拆解页基本是这些部件的排列组合。
 - `scripts/engine.py` —— 核心渲染引擎，封装文字富文本渲染、发光效果、缓动函数、背景光晕生成、章节进度条、封面生成、**场景交叉淡化合成 `render_crossfade()`**、CLI（still / cover / seg / frames 四种模式）。
-- `scripts/font_finder.py` —— 跨平台中文字体探测工具，独立可运行，输出可直接粘贴进 `engine.py` 顶部的字体路径常量。
+- `scripts/font_finder.py` —— 跨平台中文字体探测工具，独立可运行，`engine.py` 会自动调用它选字体。
 - `scripts/preflight.py` —— **交付前自检脚本**。一次查完分辨率 / 码率 / 时长 / 峰值 / **手机外放可闻性** / 首帧封面是否正常，
   用法 `python3 preflight.py 成片.mp4 --min 48 --max 62`，全通过才算交付。
 - `references/topic-library.md` —— **选题库**。三条准入标准、四个方向的选题池（含每个选题的数据源）、数据源优先级、
