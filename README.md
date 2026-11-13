@@ -108,7 +108,7 @@ python3 build_v2.py
 - **根因**：手机扬声器物理频响在 `< 200Hz` 几乎完全衰减，传统 `55Hz–110Hz` Sub-bass 暗黑氛围音乐在手机外放时等于静音。
 - **根治方案（`scripts/music_gen_v2.py`）**：
   1. **全频段上移至 220Hz–3520Hz**：包含 `880–1760Hz` 8-bit 琶音、四次谐波温暖 Pad、带 `2500Hz` 瞬态 Click 的 Kick 鼓点，以及 `2000–6000Hz` 带通 Hi-Hat。
-  2. **双轨响度锁死**：人声轨 `loudnorm=I=-14:TP=-1.5`，BGM 轨 `loudnorm=I=-23:TP=-2.0`（混音时 `volume=0.50`），实测中高频能量比 v1 提升 **+15dB**，手机外放清晰有节奏感且绝不盖人声。
+  2. **双轨响度均衡**：人声轨 `loudnorm=I=-14:TP=-1.5`，BGM 轨 `loudnorm=I=-23:TP=-2.0`（混音时 `volume=0.50`），实测中高频能量比 v1 提升 **+15dB**，手机外放清晰有节奏感且绝不盖人声。
 
 ### 翻车点 2：9:16 封面发到视频号/小红书主页，上下标题被裁掉一半？
 - **根因**：视频号与小红书个人主页信息流默认按 **`3:4`（即 `1080×1440`）** 居中裁切竖屏视频。
@@ -127,7 +127,7 @@ python3 build_v2.py
 | :--- | :--- | :--- |
 | 中文标题变成方框 `□□□` | 系统未找到苹方/思源黑体路径 | 检查 `FONT_PATHS` 列表，macOS 默认使用 `/System/Library/Fonts/PingFang.ttc` |
 | 60fps 渲染速度慢 | 全尺寸高斯模糊次数过多 | 将辉光层先缩小 `1/2` 做 `GaussianBlur`，再放大贴回主画布 |
-| 尾音还没说完就切下一幕 | 幕时长写死未对齐 TTS | 用 `ffprobe` 读取每段 `tts_sX.mp3` 真实时长，强制 `scene_dur = max(tts_dur + 0.6, min_dur)` |
+| 尾音还没说完就切下一幕 | 幕时长固定未对齐 TTS | 用 `ffprobe` 读取每段 `tts_sX.mp3` 真实时长，强制 `scene_dur = max(tts_dur + 0.6, min_dur)` |
 
 ---
 
@@ -144,17 +144,17 @@ python3 build_v2.py
 
 | 仓库 | 领域 | 核心能力 |
 | :--- | :--- | :--- |
-| [**workbuddy-wechat-autopilot**](https://github.com/sixwei2025/workbuddy-wechat-autopilot) | 公众号全链路 | 九步硬闸总控：选题→写稿→真实截图→6套封面→6套排版→三重校验→草稿箱 |
-| [**wechat-cover-skill**](https://github.com/sixwei2025/wechat-cover-skill) | 公众号视觉 | 封面渲染引擎（6套高客单价杂志风 + 黑红金 v2b + DOM 几何硬闸） |
-| [**gzh-million-layout-skill**](https://github.com/sixwei2025/gzh-million-layout-skill) | 公众号排版 | 汇芯红 `#C8102E` 六套 100% 内联 CSS 骨架 + 乱码硬闸 + 配图皮肤 |
-| [**ai-tool-review-wechat-skill**](https://github.com/sixwei2025/ai-tool-review-wechat-skill) | 公众号评测 | AI 工具真跑评测工作流（5项一票否决 + 说人话硬闸 + 证据表） |
+| [**workbuddy-wechat-autopilot**](https://github.com/sixwei2025/workbuddy-wechat-autopilot) | 公众号全链路 | 九步全自动总控：选题→写稿→真实截图→6套封面→6套排版→三重自动质检→草稿箱 |
+| [**wechat-cover-skill**](https://github.com/sixwei2025/wechat-cover-skill) | 公众号视觉 | 封面渲染引擎（6套高客单价杂志风 + 黑红金 v2b + 防压脸自动校验） |
+| [**gzh-million-layout-skill**](https://github.com/sixwei2025/gzh-million-layout-skill) | 公众号排版 | 汇芯红 `#C8102E` 六套 100% 内联 CSS 骨架 + 零乱码检查 + 配图皮肤 |
+| [**ai-tool-review-wechat-skill**](https://github.com/sixwei2025/ai-tool-review-wechat-skill) | 公众号评测 | AI 工具真跑评测工作流（2.0 全自动压测 + 去碎句语感质检 + 六套骨架装配） |
 | [**hit-title-expert-skill**](https://github.com/sixwei2025/hit-title-expert-skill) | 爆款标题 | 一次直出 10 条 14–22 字高浓缩狠标题（5大公式 × 5类钩子词） |
 | [**auto-tutorial-skill**](https://github.com/sixwei2025/auto-tutorial-skill) | 短视频工程 | 链接/网页/真机截图 → 3:4 封面 + 1.5x 配音 + 红框标注教程视频 |
 | [**talking-head-video-skill**](https://github.com/sixwei2025/talking-head-video-skill) | 短视频工程 | 1080×1920 竖屏真人口播短视频（ASR 错字校对 + 逐字卡拉OK字幕 + 6项QC） |
 | [**3d-map-video-skill**](https://github.com/sixwei2025/3d-map-video-skill) | 短视频工程 | MapLibre 3D 地形 + WarFX 战争特效（粒子行军/点阵兵力/震屏混音） |
 | [**psych-kepu-video-skill**](https://github.com/sixwei2025/psych-kepu-video-skill) | 短视频工程 | Remotion + JSON 驱动的 15–30s 深色扁平动画心理科普短视频 |
 | [**dark-infographic-video-skill**](https://github.com/sixwei2025/dark-infographic-video-skill) | 短视频工程 | 纯 Python + FFmpeg 暗黑流光数据可视化科普片（含 v2 手机外放配乐） |
-| [**local-video-hub**](https://github.com/sixwei2025/local-video-hub) | AI 团队基建 | 视频版本地 Obsidian：多 AI 员工统一交片、去重门闸与四态流转云台 |
+| [**local-video-hub**](https://github.com/sixwei2025/local-video-hub) | AI 团队基建 | 视频版本地 Obsidian：多 AI 员工统一交片、撞题查重与四态流转云台 |
 | [**yuanliuwei-ai-skills**](https://github.com/sixwei2025/yuanliuwei-ai-skills) | 一人公司方法 | PACT 72h 需求验证模型与一人 AI 公司 10 大业务决策模块 |
 | [**book-skill**](https://github.com/sixwei2025/book-skill) | 知识工程 | 上传任意书籍 PDF → 自动提炼方法论生成 `.skill` + 公众号导流文案 |
 | [**huangdi-skill**](https://github.com/sixwei2025/huangdi-skill) | 认知操作系统 | 中国历史八大皇帝（秦始皇/汉武帝/唐太宗等）一手史料认知框架蒸馏 |
